@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>环境监测仪表盘</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="shell">
+    <section class="topbar">
+      <div>
+        <h1>环境监测仪表盘</h1>
+        <p id="dateText">--</p>
+      </div>
+      <div class="actions">
+        <strong id="timeText">--:--:--</strong>
+        <button id="connectBtn" type="button">连接串口</button>
+      </div>
+    </section>
+
+    <section class="cards" aria-label="环境数据">
+      <article class="card temp">
+        <h2>环境温度</h2>
+        <output id="tempValue">--</output>
+        <p>摄氏度 (C)</p>
+      </article>
+      <article class="card humidity">
+        <h2>环境湿度</h2>
+        <output id="humidityValue">--</output>
+        <p>百分比 (%)</p>
+      </article>
+      <article class="card light">
+        <h2>光照强度</h2>
+        <output id="lightValue">--</output>
+        <p>流明 (Lux)</p>
+      </article>
+    </section>
+
+    <section class="statusbar">
+      <span id="statusText">未连接</span>
+      <span id="uptimeText">STM32 时间 --:--:--</span>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

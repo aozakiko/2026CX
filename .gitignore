@@ -1,0 +1,38 @@
+# Archives and downloaded reference packages
+*.zip
+*.rar
+*.7z
+*.tar
+*.gz
+
+# Non-experiment support folders in the original workspace
+image/
+STM32 USB虚拟串口驱动/
+
+# Keil build outputs
+**/Obj/
+**/obj/
+**/Objects/
+**/Listings/
+**/Listing/
+**/*.axf
+**/*.hex
+**/*.map
+**/*.lst
+**/*.lnp
+**/*.dep
+**/*.crf
+**/*.d
+**/*.o
+**/*.htm
+
+# Local IDE and user state
+**/.vscode/
+*.uvguix.*
+*.uvgui.*
+*.log
+*.log.lock
+
+# Python helper caches
+__pycache__/
+*.pyc
