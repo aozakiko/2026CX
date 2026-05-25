@@ -26,7 +26,7 @@ allow_anonymous true
 
 ## 数据格式
 
-`08-温湿度光照环境监测实验/Project/APP/esp8266/wifi_function.c` 中的 `ESP8266_MQTT_Publish_Environment()` 会发布：
+`11-温湿度MQTT手机监测实验/Project/APP/esp8266/wifi_function.c` 中的 `ESP8266_MQTT_Publish_Environment()` 会发布：
 
 ```text
 stm32/env          uptime=12,temp=25.34,temp_x100=2534,humidity=52,light=63,lux=630
