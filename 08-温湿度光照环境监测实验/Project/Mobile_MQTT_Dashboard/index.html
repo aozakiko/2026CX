@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>手机 MQTT 环境监测</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="app-shell">
+    <section class="titlebar">
+      <div>
+        <p class="eyebrow">STM32 MQTT</p>
+        <h1>环境监测</h1>
+      </div>
+      <div class="connection-state" data-state="offline" id="connectionState">离线</div>
+    </section>
+
+    <section class="metrics" aria-label="环境数据">
+      <article class="metric metric-temperature">
+        <span class="metric-label">温度</span>
+        <output id="temperatureValue">--.-</output>
+        <span class="metric-unit">C</span>
+      </article>
+      <article class="metric metric-humidity">
+        <span class="metric-label">湿度</span>
+        <output id="humidityValue">--</output>
+        <span class="metric-unit">%</span>
+      </article>
+      <article class="metric metric-light">
+        <span class="metric-label">光照</span>
+        <output id="lightValue">--</output>
+        <span class="metric-unit">%</span>
+      </article>
+      <article class="metric metric-lux">
+        <span class="metric-label">Lux</span>
+        <output id="luxValue">--</output>
+        <span class="metric-unit">lx</span>
+      </article>
+    </section>
+
+    <section class="quick-status" aria-label="运行状态">
+      <div>
+        <span>更新时间</span>
+        <strong id="lastUpdateValue">--:--:--</strong>
+      </div>
+      <div>
+        <span>节点运行</span>
+        <strong id="uptimeValue">--:--:--</strong>
+      </div>
+      <div>
+        <span>消息数</span>
+        <strong id="messageCountValue">0</strong>
+      </div>
+    </section>
+
+    <form class="connect-panel" id="settingsForm">
+      <label>
+        <span>Broker WS</span>
+        <input id="brokerUrlInput" name="brokerUrl" autocomplete="off">
+      </label>
+      <label>
+        <span>Client ID</span>
+        <input id="clientIdInput" name="clientId" autocomplete="off">
+      </label>
+      <label>
+        <span>完整数据 Topic</span>
+        <input id="envTopicInput" name="envTopic" autocomplete="off">
+      </label>
+      <label>
+        <span>温度 Topic</span>
+        <input id="temperatureTopicInput" name="temperatureTopic" autocomplete="off">
+      </label>
+      <label>
+        <span>湿度 Topic</span>
+        <input id="humidityTopicInput" name="humidityTopic" autocomplete="off">
+      </label>
+      <label class="toggle-row">
+        <input id="autoReconnectInput" name="autoReconnect" type="checkbox">
+        <span>自动重连</span>
+      </label>
+      <div class="button-row">
+        <button id="connectButton" type="submit">连接</button>
+        <button id="disconnectButton" type="button">断开</button>
+      </div>
+    </form>
+
+    <section class="message-panel" aria-label="消息记录">
+      <div class="panel-heading">
+        <h2>消息记录</h2>
+        <span id="activeTopicText">--</span>
+      </div>
+      <ol id="messageLog"></ol>
+    </section>
+  </main>
+
+  <script src="mqtt.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

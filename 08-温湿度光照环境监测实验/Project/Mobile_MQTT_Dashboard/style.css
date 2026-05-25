@@ -1,0 +1,356 @@
+:root {
+  color-scheme: light;
+  --bg: #eef3f5;
+  --panel: #ffffff;
+  --ink: #20272d;
+  --muted: #697782;
+  --line: #d8e1e6;
+  --blue: #1769e0;
+  --green: #0f9f6e;
+  --red: #d94b52;
+  --amber: #b77912;
+  --violet: #6d5bd0;
+  --shadow: 0 10px 28px rgba(28, 44, 55, 0.10);
+  font-family: "Microsoft YaHei", "Segoe UI", Arial, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  min-height: 100vh;
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+}
+
+button,
+input {
+  font: inherit;
+}
+
+.app-shell {
+  width: min(960px, calc(100vw - 24px));
+  margin: 0 auto;
+  padding: 16px 0 28px;
+}
+
+.titlebar {
+  min-height: 78px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 0 12px;
+}
+
+.eyebrow,
+h1,
+h2,
+p {
+  margin: 0;
+}
+
+.eyebrow {
+  color: var(--blue);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+h1 {
+  margin-top: 3px;
+  font-size: 30px;
+  line-height: 1.18;
+}
+
+.connection-state {
+  min-width: 72px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--panel);
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.connection-state[data-state="online"] {
+  border-color: rgba(15, 159, 110, 0.35);
+  color: var(--green);
+}
+
+.connection-state[data-state="connecting"] {
+  border-color: rgba(23, 105, 224, 0.35);
+  color: var(--blue);
+}
+
+.connection-state[data-state="error"] {
+  border-color: rgba(217, 75, 82, 0.35);
+  color: var(--red);
+}
+
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.metric {
+  min-height: 142px;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: 6px;
+  padding: 18px 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  box-shadow: var(--shadow);
+}
+
+.metric-label {
+  color: var(--muted);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.metric output {
+  min-height: 58px;
+  align-self: end;
+  overflow-wrap: anywhere;
+  font-size: 40px;
+  line-height: 1.05;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.metric-unit {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.metric-temperature output {
+  color: var(--red);
+}
+
+.metric-humidity output {
+  color: var(--green);
+}
+
+.metric-light output {
+  color: var(--amber);
+}
+
+.metric-lux output {
+  color: var(--violet);
+}
+
+.quick-status {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.quick-status div {
+  min-height: 66px;
+  display: grid;
+  gap: 5px;
+  padding: 13px 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+}
+
+.quick-status span {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.quick-status strong {
+  font-size: 19px;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.connect-panel,
+.message-panel {
+  margin-top: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  box-shadow: var(--shadow);
+}
+
+.connect-panel {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  padding: 14px;
+}
+
+label {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+label span {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+input[type="text"],
+input:not([type]) {
+  width: 100%;
+  height: 42px;
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 0 11px;
+  background: #fbfdfe;
+  color: var(--ink);
+}
+
+input:focus {
+  border-color: var(--blue);
+  outline: 2px solid rgba(23, 105, 224, 0.16);
+}
+
+.toggle-row {
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 9px;
+}
+
+.toggle-row input {
+  width: 19px;
+  height: 19px;
+  accent-color: var(--blue);
+}
+
+.button-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  align-items: end;
+}
+
+button {
+  height: 42px;
+  min-width: 76px;
+  border: 0;
+  border-radius: 6px;
+  padding: 0 14px;
+  cursor: pointer;
+  font-weight: 800;
+}
+
+#connectButton {
+  background: var(--blue);
+  color: #ffffff;
+}
+
+#disconnectButton {
+  border: 1px solid var(--line);
+  background: #f7fafb;
+  color: var(--ink);
+}
+
+button:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
+.message-panel {
+  padding: 14px;
+}
+
+.panel-heading {
+  min-height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+h2 {
+  font-size: 18px;
+  line-height: 1.2;
+}
+
+.panel-heading span {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+ol {
+  min-height: 96px;
+  max-height: 210px;
+  margin: 10px 0 0;
+  padding: 0;
+  overflow: auto;
+  list-style: none;
+}
+
+li {
+  display: grid;
+  gap: 3px;
+  padding: 9px 0;
+  border-top: 1px solid var(--line);
+}
+
+li time {
+  color: var(--muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+li code {
+  overflow-wrap: anywhere;
+  color: var(--ink);
+  font-family: "Consolas", "SFMono-Regular", monospace;
+  font-size: 13px;
+}
+
+@media (max-width: 720px) {
+  .app-shell {
+    width: min(100vw - 18px, 520px);
+    padding-top: 8px;
+  }
+
+  .titlebar {
+    min-height: 68px;
+  }
+
+  h1 {
+    font-size: 26px;
+  }
+
+  .metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .metric {
+    min-height: 126px;
+    padding: 15px 13px;
+  }
+
+  .metric output {
+    min-height: 50px;
+    font-size: 34px;
+  }
+
+  .quick-status,
+  .connect-panel {
+    grid-template-columns: 1fr;
+  }
+}

@@ -28,8 +28,14 @@ bool        ESP8266_Enable_MultipleId           ( FunctionalState enumEnUnvarnis
 bool        ESP8266_Link_Server                 ( ENUM_NetPro_TypeDef enumE, char * ip, char * ComNum, ENUM_ID_NO_TypeDef id);
 bool        ESP8266_Link_MQTT                   ( char * ip, char * ComNum, ENUM_ID_NO_TypeDef id);
 bool        ESP8266_Set_MQTT_User               ( void );
-bool        ESP8266_Set_MQTT_Public             (char * topicId ,char * val);
+bool        ESP8266_Set_MQTT_Public             ( const char * topicId, const char * val );
 bool        ESP8266_Set_MQTT_Sub                (const char * topicId, const char * qos);
+bool        ESP8266_MQTT_Connect_Default        ( void );
+bool        ESP8266_MQTT_Publish_Environment    ( u32 uptime_seconds,
+                                                  int temperature_x100,
+                                                  int humidity_percent,
+                                                  u8 light_percent,
+                                                  u16 light_lux );
 
 
 

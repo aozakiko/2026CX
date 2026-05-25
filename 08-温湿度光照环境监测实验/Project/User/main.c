@@ -3,8 +3,11 @@
 #include "led.h"
 #include "usart.h"
 #include "wifi_config.h"
+#include "wifi_function.h"
 #include "env_monitor.h"
 #include <stdio.h>
+
+#define MQTT_RETRY_INTERVAL_SECONDS 5
 
 static void FormatClock(u32 seconds, char *buffer)
 {
@@ -39,6 +42,8 @@ int main(void)
 	EnvMonitor_Data env_data;
 	u32 uptime_seconds = 0;
 	char clock_text[12];
+	bool mqtt_ready = false;
+	u8 mqtt_retry_countdown = 0;
 
 	SysTick_Init(72);
 	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
@@ -54,7 +59,16 @@ int main(void)
 	printf("Light sensor: PF8 / ADC channel 6\r\n");
 	printf("DHT11 humidity sensor: PG11\r\n");
 	printf("Frame: ENV,uptime_s,temp_x100,humidity,light_percent,lux\r\n");
+	printf("MQTT broker: 192.168.166.177:1883\r\n");
+	printf("MQTT topics: stm32/env, stm32/temperature, stm32/humidity\r\n");
 	printf("====================================\r\n");
+
+	mqtt_ready = ESP8266_MQTT_Connect_Default();
+	if(!mqtt_ready)
+	{
+		printf("MQTT startup failed, serial monitor keeps running.\r\n");
+		mqtt_retry_countdown = MQTT_RETRY_INTERVAL_SECONDS;
+	}
 
 	while(1)
 	{
@@ -83,6 +97,35 @@ int main(void)
 		       env_data.humidity_percent,
 		       env_data.light_percent,
 		       env_data.light_lux);
+
+		if(mqtt_ready)
+		{
+			ESP8266_MQTT_Poll();
+			mqtt_ready = ESP8266_MQTT_Publish_Environment(uptime_seconds,
+			                                               env_data.temperature_x100,
+			                                               env_data.humidity_percent,
+			                                               env_data.light_percent,
+			                                               env_data.light_lux);
+			if(!mqtt_ready)
+			{
+				printf("MQTT publish failed, reconnect after %d seconds.\r\n",
+				       MQTT_RETRY_INTERVAL_SECONDS);
+				mqtt_retry_countdown = MQTT_RETRY_INTERVAL_SECONDS;
+			}
+		}
+		else if(mqtt_retry_countdown == 0)
+		{
+			printf("Retrying MQTT connection...\r\n");
+			mqtt_ready = ESP8266_MQTT_Connect_Default();
+			if(!mqtt_ready)
+			{
+				mqtt_retry_countdown = MQTT_RETRY_INTERVAL_SECONDS;
+			}
+		}
+		else
+		{
+			mqtt_retry_countdown--;
+		}
 
 		LED1 = !LED1;
 		delay_ms(1000);

@@ -14,6 +14,17 @@
 // ?????????ID???????0???????????????
 #define Single_ID 0 
 
+#define DEFAULT_WIFI_SSID       "Redmi"
+#define DEFAULT_WIFI_PASSWORD   "12345678"
+#define DEFAULT_MQTT_HOST       "192.168.166.177"
+#define DEFAULT_MQTT_PORT       "1883"
+#define MQTT_TOPIC_LED_CONTROL  "topic911"
+#define MQTT_TOPIC_ENV          "stm32/env"
+#define MQTT_TOPIC_TEMPERATURE  "stm32/temperature"
+#define MQTT_TOPIC_HUMIDITY     "stm32/humidity"
+
+static bool s_mqtt_led_subscribed = false;
+
 bool ESP8266_Cmd ( char * cmd, char * reply1, char * reply2, u32 waittime );
 
 
@@ -456,9 +467,9 @@ bool ESP8266_MQTT_Setup ( void )
  *         0?????????
  * ????  ??????????
  */
-bool ESP8266_Set_MQTT_Public (char * topicId ,char * val)
+bool ESP8266_Set_MQTT_Public ( const char * topicId, const char * val )
 {
-	char cStr [100] = { 0 }, cCmd [120];
+	char cCmd [220];
      //construct string: AT+MQTTPUB=0,"topic911","66693",0,0
 	sprintf ( cCmd, "AT+MQTTPUB=0,\"%s\",\"%s\",0,0", topicId, val );
 	return ESP8266_Cmd ( cCmd, "OK", "ALREADY CONNECT", 5000 );
@@ -479,6 +490,61 @@ bool ESP8266_Set_MQTT_Sub (const  char * topicId,const  char * qos)
 	sprintf ( cCmd, "AT+MQTTSUB=0,\"%s\",0", topicId );
 	PC_Usart ( "MQTT SUB retry qos0: %s\r\n", cCmd );
 	return ESP8266_Cmd ( cCmd, "OK", "ALREADY SUBSCRIBE", 8000 );
+}
+
+
+static void ESP8266_Format_Temp_X100 ( int temp_x100, char * out )
+{
+	char sign = '+';
+
+	if ( temp_x100 < 0 )
+	{
+		sign = '-';
+		temp_x100 = - temp_x100;
+	}
+
+	if ( sign == '-' )
+		sprintf ( out, "-%d.%02d", temp_x100 / 100, temp_x100 % 100 );
+	else
+		sprintf ( out, "%d.%02d", temp_x100 / 100, temp_x100 % 100 );
+}
+
+
+bool ESP8266_MQTT_Publish_Environment ( u32 uptime_seconds,
+                                        int temperature_x100,
+                                        int humidity_percent,
+                                        u8 light_percent,
+                                        u16 light_lux )
+{
+	char env_payload [120];
+	char temp_payload [16];
+	char humidity_payload [12];
+	bool ok = true;
+
+	ESP8266_Format_Temp_X100 ( temperature_x100, temp_payload );
+	sprintf ( humidity_payload, "%d", humidity_percent );
+	sprintf ( env_payload,
+	          "uptime=%u,temp=%s,temp_x100=%d,humidity=%d,light=%d,lux=%d",
+	          ( unsigned int ) uptime_seconds,
+	          temp_payload,
+	          temperature_x100,
+	          humidity_percent,
+	          light_percent,
+	          light_lux );
+
+	if ( ! ESP8266_Set_MQTT_Public ( MQTT_TOPIC_ENV, env_payload ) )
+		ok = false;
+	if ( ! ESP8266_Set_MQTT_Public ( MQTT_TOPIC_TEMPERATURE, temp_payload ) )
+		ok = false;
+	if ( ! ESP8266_Set_MQTT_Public ( MQTT_TOPIC_HUMIDITY, humidity_payload ) )
+		ok = false;
+
+	if ( ok )
+		PC_Usart ( "\r\n>>> Published env: %s\r\n", env_payload );
+	else
+		PC_Usart ( "\r\n>>> Publish env failed\r\n" );
+
+	return ok;
 }
 
 
@@ -872,51 +938,31 @@ void ESP8266_STA_TCP_Client_Single ( void )
 // ?????????????????????????????????????????
 
 
-void ESP8266_STA_TCP_Client_MQTT ( void )
+bool ESP8266_MQTT_Connect_Default ( void )
 {
-    // ???????
-    const char* ssid = "Redmi";
-    const char* password = "12345678";
-    /* ?????????? MQTT Broker ?? Redmi ???/????????? IP?????? ipconfig ?? */
-    const char* server_ip = "192.168.166.177";
-    const char* server_port = "1883";        
-    
-    // **??????????????????????**
     u8 wifi_retry = 0;
     bool wifi_connected = false;
     u8 server_retry = 0;
     bool server_connected = false;
-    u8 setUser_retry = 0;   // ????????????????????
-    bool setUser_mqtt = false;  // ???????????????????
-	u8 setPublic_retry = 0;   // ?????????????????????
-	bool setPublic_mqtt = false;  // ????????????????????
-	// sub mqtt topic retry
-	u8 sub_retry = 0;   // ???????????????
-	bool sub_mqtt = false;  // ??????????????
-	//sub topic id
-	const char* topic_id = "topic911"; // ???????????ID?topic911 
-	// sub qos
-	char qos[] = "0";
-	// ?????????????????????????
+    u8 setUser_retry = 0;
+    bool setUser_mqtt = false;
+	u8 sub_retry = 0;
+	bool sub_mqtt = false;
 
+	s_mqtt_led_subscribed = false;
 
-
-    const char* test_data;
-    u32 data_len;
-
-    // ???????
     PC_Usart("\r\nInitializing ESP8266...\r\n");
     ESP8266_Choose(ENABLE);
     ESP8266_AT_Test();
     ESP8266_Cmd ( "AT+SLEEP=0", "OK", NULL, 1000 );
 
-    PC_Usart("\r\nConnecting to WiFi: %s...\r\n", ssid);
+    PC_Usart("\r\nConnecting to WiFi: %s...\r\n", DEFAULT_WIFI_SSID);
     ESP8266_Net_Mode_Choose(STA);
     delay_ms ( 500 );
 
     while ( wifi_retry < 5 && ! wifi_connected )
     {
-        wifi_connected = ESP8266_JoinAP ( (char*)ssid, (char*)password );
+        wifi_connected = ESP8266_JoinAP ( ( char * ) DEFAULT_WIFI_SSID, ( char * ) DEFAULT_WIFI_PASSWORD );
         if ( ! wifi_connected )
         {
             PC_Usart ( "\r\nWiFi failed, retry %d/5. Check Redmi 2.4G & password.\r\n", wifi_retry + 1 );
@@ -929,13 +975,13 @@ void ESP8266_STA_TCP_Client_MQTT ( void )
     if ( ! wifi_connected )
     {
         PC_Usart ( "\r\n*** WiFi not connected. Fix WiFi before MQTT. ***\r\n" );
-        while ( 1 ) { }
+        return false;
     }
 
     if ( ! ESP8266_Has_Sta_IP () )
     {
         PC_Usart ( "\r\n*** No IP address. WiFi unstable. ***\r\n" );
-        while ( 1 ) { }
+        return false;
     }
 
     PC_Usart ( "\r\nWiFi OK. STA IP check with AT+CIFSR above.\r\n" );
@@ -956,20 +1002,20 @@ void ESP8266_STA_TCP_Client_MQTT ( void )
 	if ( ! setUser_mqtt )
 	{
 		PC_Usart ( "\r\n*** MQTTUSERCFG failed. Power-cycle board & retry. ***\r\n" );
-		while ( 1 ) { }
+		return false;
 	}
 
-	PC_Usart ( "\r\nConnecting MQTT %s:%s (PC must allow 1883)...\r\n", server_ip, server_port );
+	PC_Usart ( "\r\nConnecting MQTT %s:%s (PC must allow 1883)...\r\n", DEFAULT_MQTT_HOST, DEFAULT_MQTT_PORT );
 	while ( server_retry < 5 && ! server_connected )
 	{
 		if ( ! ESP8266_Has_Sta_IP () )
 		{
 			PC_Usart ( "\r\nLost WiFi IP, reconnect AP...\r\n" );
-			ESP8266_JoinAP ( (char*)ssid, (char*)password );
+			ESP8266_JoinAP ( ( char * ) DEFAULT_WIFI_SSID, ( char * ) DEFAULT_WIFI_PASSWORD );
 			delay_ms ( 1000 );
 		}
 
-		server_connected = ESP8266_Link_MQTT ( (char*)server_ip, (char*)server_port, 9 );
+		server_connected = ESP8266_Link_MQTT ( ( char * ) DEFAULT_MQTT_HOST, ( char * ) DEFAULT_MQTT_PORT, 9 );
 		if ( ! server_connected )
 		{
 			PC_Usart ( "\r\nMQTTCONN failed %d/5. Check Mosquitto/firewall/hotspot isolation.\r\n", server_retry + 1 );
@@ -983,8 +1029,8 @@ void ESP8266_STA_TCP_Client_MQTT ( void )
 
 	if ( ! server_connected )
 	{
-		PC_Usart ( "\r\nMQTT failed. Mosquitto on 0.0.0.0:1883? IP=192.168.166.177?\r\n" );
-		while ( 1 ) { }
+		PC_Usart ( "\r\nMQTT failed. Mosquitto on 0.0.0.0:%s? IP=%s?\r\n", DEFAULT_MQTT_PORT, DEFAULT_MQTT_HOST );
+		return false;
 	}
 
 	delay_ms ( 1500 );
@@ -992,7 +1038,7 @@ void ESP8266_STA_TCP_Client_MQTT ( void )
 	PC_Usart ( "\r\nSubscribing to MQTT topic...\r\n" );
 	while ( sub_retry < 5 && ! sub_mqtt )
 	{
-		sub_mqtt = ESP8266_Set_MQTT_Sub ( topic_id, qos );
+		sub_mqtt = ESP8266_Set_MQTT_Sub ( MQTT_TOPIC_LED_CONTROL, "0" );
 		if ( ! sub_mqtt )
 		{
 			PC_Usart ( "\r\nSubscribe failed %d/5. Retry...\r\n", sub_retry + 1 );
@@ -1001,32 +1047,39 @@ void ESP8266_STA_TCP_Client_MQTT ( void )
 		}
 	}
 
-	(void) setPublic_retry;
-	(void) setPublic_mqtt;
-
-
-
-    
-    // ?????????????????????????
-    // test_data = "Hello from ESP8266!";
-    // data_len = strlen(test_data);
-    // PC_Usart("\r\nSending test data: %s\r\n", test_data);
-    // if (ESP8266_SendString(DISABLE, (char*)test_data, data_len, 0)) { // ????Single_ID=0
-    //     PC_Usart("\r\nData sent successfully!\r\n");
-    // } else {
-    //     PC_Usart("\r\nFailed to send data!\r\n");
-    // }
-    
 	if ( sub_mqtt )
-		PC_Usart ( "\r\nMQTT ready. Publish to topic911: 1=ON, 0=OFF\r\n" );
+		PC_Usart ( "\r\nMQTT ready. Env topic: %s | LED topic: %s\r\n", MQTT_TOPIC_ENV, MQTT_TOPIC_LED_CONTROL );
 	else
-		PC_Usart ( "\r\nMQTT subscribe failed. Fix broker, reflash.\r\n" );
+		PC_Usart ( "\r\nMQTT subscribe failed. Env publishing can still be retried.\r\n" );
+
+	s_mqtt_led_subscribed = sub_mqtt;
+
+	return true;
+}
+
+
+void ESP8266_STA_TCP_Client_MQTT ( void )
+{
+	bool mqtt_ready;
+	bool sub_mqtt;
+
+	mqtt_ready = ESP8266_MQTT_Connect_Default ();
+	sub_mqtt = s_mqtt_led_subscribed;
 
     while ( 1 )
     {
+		if ( ! mqtt_ready )
+		{
+			delay_ms ( 3000 );
+			mqtt_ready = ESP8266_MQTT_Connect_Default ();
+			sub_mqtt = s_mqtt_led_subscribed;
+			continue;
+		}
+
 		if ( ! sub_mqtt )
 		{
-			sub_mqtt = ESP8266_Set_MQTT_Sub ( topic_id, qos );
+			sub_mqtt = ESP8266_Set_MQTT_Sub ( MQTT_TOPIC_LED_CONTROL, "0" );
+			s_mqtt_led_subscribed = sub_mqtt;
 			delay_ms ( 3000 );
 		}
         ESP8266_MQTT_Poll ();
